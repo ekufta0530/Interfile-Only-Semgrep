@@ -1,0 +1,62 @@
+rules:
+- id: django-cookie-httponly-missing
+  message: Detected a cookie where the `HttpOnly` flag is either missing or disabled.
+    The `HttpOnly` cookie flag instructs the browser to forbid client-side JavaScript
+    to read the cookie. If JavaScript interaction is required, you can ignore this
+    finding. However, set the `HttpOnly` flag to `true` in all other cases.
+  severity: INFO
+  metadata:
+    likelihood: LOW
+    impact: LOW
+    confidence: HIGH
+    category: security
+    subcategory:
+    - vuln
+    cwe:
+    - 'CWE-1004: Sensitive Cookie Without ''HttpOnly'' Flag'
+    functional-categories:
+    - web::search::cookie-config::django
+    - web::search::cookie-config::starlette
+    owasp:
+    - A05:2021 - Security Misconfiguration
+    references:
+    - https://owasp.org/Top10/A05_2021-Security_Misconfiguration
+    technology:
+    - cookie
+    - cookies
+    - django
+    - web
+  languages:
+  - python
+  fix: $RESPONSE.$SET_COOKIE($...ARGS, httponly=True)
+  options:
+    interfile: true
+    symbolic_propagation: true
+  patterns:
+  - patterns:
+    - patterns:
+      - pattern-either:
+        - pattern: $RESPONSE.set_cookie(...)
+        - pattern: $RESPONSE.set_signed_cookie(...)
+      - metavariable-type:
+          metavariable: $RESPONSE
+          types:
+          - Response
+          - FileResponse
+          - Http404
+          - HttpResponseBadRequest
+          - HttpResponseForbidden
+          - HttpResponseGone
+          - HttpResponseNotAllowed
+          - HttpResponseNotFound
+          - HttpResponseNotModified
+          - HttpResponse
+          - HttpResponseBase
+          - StreamingHttpResponse
+          - HttpResponseServerError
+          - JsonResponse
+          - FileResponse
+    - pattern: $RESPONSE.$SET_COOKIE($...ARGS)
+    - pattern-not: $RESPONSE.$SET_COOKIE(..., httponly=$FALSE, ...)
+    - pattern-not: $RESPONSE.$SET_COOKIE($KEY, $VALUE, $MAX_AGE, $EXPIRES, $PATH,
+        $DOMAIN, $SECURE, $FALSE, ...)

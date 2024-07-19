@@ -1,0 +1,290 @@
+rules:
+- id: file-taint
+  message: The application builds a file path from potentially untrusted data, which
+    can lead to a path traversal vulnerability. An attacker can manipulate the path
+    which the application uses to access files. If the application does not validate
+    user input and sanitize file paths, sensitive files such as configuration or user
+    data can be accessed, potentially creating or overwriting files. To prevent this
+    vulnerability, validate and sanitize any input that is used to create references
+    to file paths. Also, enforce strict file access controls. For example, choose
+    privileges allowing public-facing applications to access only the required files.
+    In Java, you may also consider using a utility method such as `org.apache.commons.io.FilenameUtils.getName(...)`
+    to only retrieve the file name from the path.
+  severity: ERROR
+  metadata:
+    likelihood: MEDIUM
+    impact: HIGH
+    confidence: LOW
+    category: security
+    subcategory:
+    - audit
+    cwe:
+    - 'CWE-22: Improper Limitation of a Pathname to a Restricted Directory (''Path
+      Traversal'')'
+    cwe2020-top25: true
+    cwe2021-top25: true
+    cwe2022-top25: true
+    functional-categories:
+    - file::sink::file-access::commons-io
+    - file::sink::file-access::java.io
+    - file::sink::file-access::java.xml
+    - web::source::cookie::Micronaut
+    - web::source::form-data::Micronaut
+    - web::source::header::Micronaut
+    - web::source::http-body::Micronaut
+    - web::source::http-params::Micronaut
+    - web::source::url-path-params::Micronaut
+    owasp:
+    - A01:2021 - Broken Access Control
+    - A05:2017 - Broken Access Control
+    references:
+    - https://owasp.org/Top10/A01_2021-Broken_Access_Control
+    - https://owasp.org/www-community/attacks/Path_Traversal
+    - https://portswigger.net/web-security/file-path-traversal
+    technology:
+    - Micronaut
+    - java
+  languages:
+  - java
+  mode: taint
+  options:
+    interfile: true
+    taint_assume_safe_booleans: true
+    taint_assume_safe_numbers: true
+  pattern-sources:
+  - patterns:
+    - pattern: '@io.micronaut.http.annotation.$METHOD(...)
+
+        $T $FUNC(..., $TYPE $SOURCE, ...) {...}
+
+        '
+    - focus-metavariable: $SOURCE
+    - metavariable-regex:
+        metavariable: $METHOD
+        regex: (Delete|Get|Head|Options|Patch|Put|Post|Trace|CustomHttpMethod)
+    - metavariable-pattern:
+        metavariable: $TYPE
+        patterns:
+        - patterns:
+          - pattern-not-regex: ^Session$
+  - patterns:
+    - pattern-either:
+      - pattern: (io.micronaut.http.HttpRequest<$ANY> $REQ).$PARAM(...)
+      - pattern: (io.micronaut.http.HttpRequest<?> $REQ).$PARAM(...)
+      - pattern: (io.micronaut.http.HttpRequest $REQ).$PARAM(...)
+    - metavariable-pattern:
+        metavariable: $PARAM
+        patterns:
+        - patterns:
+          - pattern-either:
+            - pattern: getCookies
+            - pattern: getLocale
+            - pattern: getParameters
+            - pattern: getPath
+            - pattern: getUri
+            - pattern: getBody
+            - pattern: getContentType
+            - pattern: getHeaders
+  pattern-propagators:
+  - from: $FROM
+    patterns:
+    - pattern-either:
+      - patterns:
+        - pattern-either:
+          - pattern: (java.util.List $TO).$METHOD(...)
+          - pattern: (java.util.List<$E> $TO).$METHOD(...)
+          - pattern: (java.util.Stack $TO).$METHOD(...)
+          - pattern: (java.util.Stack<$E> $TO).$METHOD(...)
+          - pattern: (java.util.Vector $TO).$METHOD(...)
+          - pattern: (java.util.Vector<$E> $TO).$METHOD(...)
+          - pattern: (java.util.ArrayList $TO).$METHOD(...)
+          - pattern: (java.util.ArrayList<$E> $TO).$METHOD(...)
+          - pattern: (java.util.LinkedList $TO).$METHOD(...)
+          - pattern: (java.util.LinkedList<$E> $TO).$METHOD(...)
+          - pattern: (java.util.AbstractList $TO).$METHOD(...)
+          - pattern: (java.util.AbstractList<$E> $TO).$METHOD(...)
+          - pattern: (java.util.AbstractSequentialList $TO).$METHOD(...)
+          - pattern: (java.util.AbstractSequentialList<$E> $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.CopyOnWriteArrayList $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.CopyOnWriteArrayList<$E> $TO).$METHOD(...)
+        - pattern-either:
+          - pattern: $TO.add($FROM)
+          - pattern: $TO.add($X, $FROM)
+          - pattern: $TO.addAll($FROM)
+          - pattern: $TO.addAll($X, $FROM)
+          - pattern: $TO.addFirst(..., $FROM, ...)
+          - pattern: $TO.addLast(..., $FROM, ...)
+          - pattern: $TO.addAllAbsent(..., $FROM, ...)
+          - pattern: $TO.addIfAbsent(..., $FROM, ...)
+          - pattern: $TO.addElement(..., $FROM, ...)
+          - pattern: $TO.set($X, $FROM)
+          - pattern: $TO.push(..., $FROM, ...)
+          - pattern: $TO.setElementAt(..., $FROM, ...)
+          - pattern: $TO.replaceAll(..., $FROM, ...)
+          - pattern: $TO.insertElementAt($FROM, ...)
+      - patterns:
+        - pattern-either:
+          - pattern: (java.util.Queue $TO).$METHOD(...)
+          - pattern: (java.util.Queue<$E> $TO).$METHOD(...)
+          - pattern: (java.util.Deque $TO).$METHOD(...)
+          - pattern: (java.util.Deque<$E> $TO).$METHOD(...)
+          - pattern: (java.util.ArrayDeque $TO).$METHOD(...)
+          - pattern: (java.util.ArrayDeque<$E> $TO).$METHOD(...)
+          - pattern: (java.util.AbstractQueue $TO).$METHOD(...)
+          - pattern: (java.util.AbstractQueue<$E> $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.DelayQueue $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.DelayQueue<$E> $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.BlockingQueue $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.BlockingQueue<$E> $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.TransferQueue $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.TransferQueue<$E> $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.BlockingDeque $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.BlockingDeque<$E> $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.SynchronousQueue $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.SynchronousQueue<$E> $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.LinkedTransferQueue $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.LinkedTransferQueue<$E> $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.ArrayBlockingQueue $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.ArrayBlockingQueue<$E> $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.LinkedBlockingDeque $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.LinkedBlockingDeque<$E> $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.LinkedBlockingQueue $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.LinkedBlockingQueue<$E> $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.PriorityBlockingQueue $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.PriorityBlockingQueue<$E> $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.ConcurrentLinkedDeque $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.ConcurrentLinkedDeque<$E> $TO).$METHOD(...)
+        - pattern-either:
+          - pattern: $TO.add(..., $FROM, ...)
+          - pattern: $TO.addFirst(..., $FROM, ...)
+          - pattern: $TO.addLast(..., $FROM, ...)
+          - pattern: $TO.addAll(..., $FROM, ...)
+          - pattern: $TO.put(..., $FROM, ...)
+          - pattern: $TO.putLast(..., $FROM, ...)
+          - pattern: $TO.putFirst(..., $FROM, ...)
+          - pattern: $TO.push(..., $FROM, ...)
+          - pattern: $TO.offer($FROM, ...)
+          - pattern: $TO.offerLast($FROM, ...)
+          - pattern: $TO.offerFirst($FROM, ...)
+      - patterns:
+        - pattern-either:
+          - pattern: (java.util.Set $TO).$METHOD(...)
+          - pattern: (java.util.Set<$E> $TO).$METHOD(...)
+          - pattern: (java.util.TreeSet $TO).$METHOD(...)
+          - pattern: (java.util.TreeSet<$E> $TO).$METHOD(...)
+          - pattern: (java.util.EnumSet $TO).$METHOD(...)
+          - pattern: (java.util.EnumSet<$E> $TO).$METHOD(...)
+          - pattern: (java.util.HashSet $TO).$METHOD(...)
+          - pattern: (java.util.HashSet<$E> $TO).$METHOD(...)
+          - pattern: (java.util.SortedSet $TO).$METHOD(...)
+          - pattern: (java.util.SortedSet<$E> $TO).$METHOD(...)
+          - pattern: (java.util.AbstractSet $TO).$METHOD(...)
+          - pattern: (java.util.AbstractSet<$E> $TO).$METHOD(...)
+          - pattern: (java.util.NavigableSet $TO).$METHOD(...)
+          - pattern: (java.util.NavigableSet<$E> $TO).$METHOD(...)
+          - pattern: (java.util.LinkedHashSet $TO).$METHOD(...)
+          - pattern: (java.util.LinkedHashSet<$E> $TO).$METHOD(...)
+          - pattern: (java.util.AbstractCollection $TO).$METHOD(...)
+          - pattern: (java.util.AbstractCollection<$E> $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.CopyOnWriteArraySet $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.CopyOnWriteArraySet<$E> $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.ConcurrentSkipListSet $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.ConcurrentSkipListSet<$E> $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.ConcurrentHashMap.KeySetView $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.ConcurrentHashMap.KeySetView<$E> $TO).$METHOD(...)
+        - pattern-either:
+          - pattern: $TO.add(..., $FROM, ...)
+          - pattern: $TO.addAll(..., $FROM, ...)
+      - patterns:
+        - pattern-either:
+          - pattern: (java.util.Map $TO).$METHOD(...)
+          - pattern: (java.util.Map<$K, $V> $TO).$METHOD(...)
+          - pattern: (java.util.NavigableMap $TO).$METHOD(...)
+          - pattern: (java.util.NavigableMap<$K, $V> $TO).$METHOD(...)
+          - pattern: (java.util.SortedMap $TO).$METHOD(...)
+          - pattern: (java.util.SortedMap<$K, $V> $TO).$METHOD(...)
+          - pattern: (java.util.TreeMap $TO).$METHOD(...)
+          - pattern: (java.util.TreeMap<$K, $V> $TO).$METHOD(...)
+          - pattern: (java.util.AbstractMap $TO).$METHOD(...)
+          - pattern: (java.util.AbstractMap<$K, $V> $TO).$METHOD(...)
+          - pattern: (java.util.EnumMap $TO).$METHOD(...)
+          - pattern: (java.util.EnumMap<$K, $V> $TO).$METHOD(...)
+          - pattern: (java.util.HashMap $TO).$METHOD(...)
+          - pattern: (java.util.HashMap<$K, $V> $TO).$METHOD(...)
+          - pattern: (java.util.Hashtable $TO).$METHOD(...)
+          - pattern: (java.util.Hashtable<$K, $V> $TO).$METHOD(...)
+          - pattern: (java.util.IdentityHashMap $TO).$METHOD(...)
+          - pattern: (java.util.IdentityHashMap<$K, $V> $TO).$METHOD(...)
+          - pattern: (java.util.LinkedHashMap $TO).$METHOD(...)
+          - pattern: (java.util.LinkedHashMap<$K, $V> $TO).$METHOD(...)
+          - pattern: (java.util.WeakHashMap $TO).$METHOD(...)
+          - pattern: (java.util.WeakHashMap<$K, $V> $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.ConcurrentMap $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.ConcurrentMap<$K, $V> $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.ConcurrentHashMap $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.ConcurrentHashMap<$K, $V> $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.ConcurrentSkipListMap $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.ConcurrentSkipListMap<$K, $V> $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.ConcurrentNavigableMap $TO).$METHOD(...)
+          - pattern: (java.util.concurrent.ConcurrentNavigableMap<$K, $V> $TO).$METHOD(...)
+          - pattern: (java.util.Properties $TO).$METHOD(...)
+          - pattern: (java.util.Properties<$K, $V> $TO).$METHOD(...)
+        - pattern-either:
+          - pattern: $TO.merge(..., $FROM, ...)
+          - pattern: $TO.put(..., $FROM, ...)
+          - pattern: $TO.putAll(..., $FROM, ...)
+          - pattern: $TO.putIfAbsent(..., $FROM, ...)
+          - pattern: $TO.replace($X, ..., $FROM, ...)
+          - pattern: $TO.replaceAll(..., $FROM, ...)
+    to: $TO
+  - from: $INPUT
+    patterns:
+    - pattern-either:
+      - pattern: String.format($FMT, ..., $INPUT, ...)
+      - pattern: MessageFormat.format($FMT, ..., $INPUT, ...)
+    to: $FMT
+  - from: $FROM
+    patterns:
+    - pattern-either:
+      - pattern: (StringBuilder $TO).append($FROM, ...)
+      - pattern: (StringBuilder $TO).insert($OFFSET, $FROM, ...)
+      - pattern: (StringBuilder $TO).replace($START, $END, $FROM, ...)
+      - pattern: (StringBuffer $TO).append($FROM, ...)
+      - pattern: (StringBuffer $TO).insert($OFFSET, $FROM, ...)
+    to: $TO
+  - from: $F
+    patterns:
+    - pattern: $X = (java.io.File $F).$ANY(...)
+    to: $X
+  pattern-sinks:
+  - patterns:
+    - focus-metavariable: $FILE
+    - pattern-either:
+      - pattern: new java.io.File(..., $FILE, ...)
+      - pattern: new java.io.FileReader($FILE, ...)
+      - pattern: new java.io.FileInputStream($FILE, ...)
+      - pattern: new java.io.FileOutputStream($FILE, ...)
+      - pattern: new javax.xml.transform.stream.StreamSource($FILE, ...)
+      - patterns:
+        - pattern-either:
+          - pattern: (Class $CLASS).getResourceAsStream($FILE, ...)
+          - pattern: (Class $CLASS).getResources($FILE, ...)
+          - pattern: (Class $CLASS).getResource($FILE, ...)
+          - pattern: (ClassLoader $CLASS).getResourceAsStream($FILE, ...)
+          - pattern: (ClassLoader $CLASS).getResources($FILE, ...)
+          - pattern: (ClassLoader $CLASS).getResource($FILE, ...)
+      - patterns:
+        - pattern-either:
+          - pattern: $CLASS.getResourceAsStream($FILE, ...)
+          - pattern: $CLASS.getResources($FILE, ...)
+          - pattern: $CLASS.getResource($FILE, ...)
+        - metavariable-regex:
+            metavariable: $CLASS
+            regex: .*(?i)class.*
+  pattern-sanitizers:
+  - pattern: (ChoiceFormat $X).format(...)
+  - pattern: (DecimalFormat $X).format(...)
+  - pattern: (java.util.UUID $X)
+  - pattern: org.apache.commons.io.FilenameUtils.getName(...)
+  - pattern: "if (<... $FN.startsWith(...) ...>)\n{\n  ...\n}\n...\n"
+  - pattern: "if (<... $FN.contains(...) ...>)\n{\n  ...\n}\n...\n"

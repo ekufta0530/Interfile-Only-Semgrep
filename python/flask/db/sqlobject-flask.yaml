@@ -1,0 +1,569 @@
+rules:
+- id: sqlobject-flask
+  message: "Untrusted input might be used to build a database query, which can lead\
+    \ to a SQL injection vulnerability. An attacker can execute malicious SQL statements\
+    \ and gain unauthorized access to sensitive data, modify, delete data, or execute\
+    \ arbitrary system commands. Don\u2019t manually concatenate values to a query,\
+    \ use SQLBuilder instead to avoid SQL injection."
+  severity: ERROR
+  metadata:
+    likelihood: HIGH
+    impact: HIGH
+    confidence: HIGH
+    category: security
+    subcategory:
+    - vuln
+    cwe:
+    - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command
+      (''SQL Injection'')'
+    cwe2020-top25: true
+    cwe2021-top25: true
+    cwe2022-top25: true
+    functional-categories:
+    - db::sink::sql-or-nosql-query::sqlobject
+    - web::source::cookie::flask
+    - web::source::form-data::flask
+    - web::source::form-data::flask-wtf
+    - web::source::form-data::wtforms
+    - web::source::header::flask
+    - web::source::http-body::flask
+    - web::source::http-params::flask
+    - web::source::url-path-params::flask
+    owasp:
+    - A01:2017 - Injection
+    - A03:2021 - Injection
+    references:
+    - https://owasp.org/Top10/A03_2021-Injection
+    - https://sqlobject.org/SQLBuilder.html
+    - https://sqlobject.org/SQLObject.html
+    technology:
+    - flask
+    - flask-wtf
+    - sql
+    - sqlobject
+    - web
+    - wtforms
+  languages:
+  - python
+  mode: taint
+  options:
+    interfile: true
+    symbolic_propagation: true
+    taint_assume_safe_booleans: true
+    taint_assume_safe_numbers: true
+  pattern-sources:
+  - pattern-either:
+    - patterns:
+      - pattern: flask.request.$FUNC()
+      - metavariable-regex:
+          metavariable: $FUNC
+          regex: ^(from_values|get_data|get_json)$
+    - patterns:
+      - pattern-either:
+        - pattern: flask.request.$PROPERTY
+        - pattern: flask.request.$PROPERTY[...]
+        - pattern: flask.request.$PROPERTY.get(...)
+      - metavariable-regex:
+          metavariable: $PROPERTY
+          regex: ^(args|cookies|data|files|form|full_path|headers|input_stream|json|path|stream|values|view_args)$
+    - patterns:
+      - pattern: "@$APP.$ROUTE\ndef $FUNC(..., $PARAM, ...):\n  ...\n"
+      - metavariable-regex:
+          metavariable: $ROUTE
+          regex: ^(endpoint)$
+      - focus-metavariable: $PARAM
+  - patterns:
+    - pattern: "@$APP.$ROUTE(...)\ndef $FUNC(..., $PARAM, ...):\n  ...\n"
+    - metavariable-regex:
+        metavariable: $ROUTE
+        regex: ^(route|delete|get|patch|post|put)$
+    - focus-metavariable: $PARAM
+  - patterns:
+    - pattern-inside: "@$APP.$ROUTE(...)\ndef $FUNC(...):\n  ...\n"
+    - pattern: $FORM.$FIELD.data
+    - metavariable-regex:
+        metavariable: $ROUTE
+        regex: ^(route|delete|get|patch|post|put|endpoint)$
+    - metavariable-type:
+        metavariable: $FORM
+        type: FlaskForm
+  pattern-propagators:
+  - from: $DEFAULT
+    patterns:
+    - patterns:
+      - pattern-either:
+        - pattern-inside: '$DICT[$KEY]
+
+            ...
+
+            '
+        - pattern-inside: '$DICT.get($KEY, $DEFAULT)
+
+            ...
+
+            '
+        - pattern-inside: '$DICT = { ... }
+
+            ...
+
+            '
+        - pattern-inside: '$DICT = dict(...)
+
+            ...
+
+            '
+      - pattern-either:
+        - pattern: $DICT.get($FIELD, $DEFAULT)
+        - pattern: $DICT.setdefault($KEY, $DEFAULT)
+    to: $DICT
+  - from: $FROM_DICT
+    patterns:
+    - patterns:
+      - pattern-either:
+        - pattern-inside: '$TO_DICT[$KEY]
+
+            ...
+
+            '
+        - pattern-inside: '$TO_DICT.get($KEY, $DEFAULT)
+
+            ...
+
+            '
+        - pattern-inside: '$TO_DICT = { ... }
+
+            ...
+
+            '
+        - pattern-inside: '$TO_DICT = dict(...)
+
+            ...
+
+            '
+        - pattern-inside: '$FROM_DICT[$KEY]
+
+            ...
+
+            '
+        - pattern-inside: '$FROM_DICT.get($KEY, $DEFAULT)
+
+            ...
+
+            '
+        - pattern-inside: '$FROM_DICT = { ... }
+
+            ...
+
+            '
+        - pattern-inside: '$FROM_DICT = dict(...)
+
+            ...
+
+            '
+      - pattern-either:
+        - pattern: $TO_DICT.update($FROM_DICT)
+        - pattern: $TO_DICT | $FROM_DICT
+        - pattern: $TO_DICT |= $FROM_DICT
+    to: $TO_DICT
+  - from: $FROM
+    patterns:
+    - patterns:
+      - pattern-either:
+        - pattern-inside: '$LIST = [ ... ]
+
+            ...
+
+            '
+        - pattern-inside: '$LIST = list(...)
+
+            ...
+
+            '
+      - pattern-either:
+        - pattern: $LIST.append($FROM)
+        - pattern: $LIST.extend($FROM)
+        - pattern: $LIST.insert($INDEX, $FROM)
+    to: $LIST
+  - from: $FROM
+    patterns:
+    - patterns:
+      - pattern-either:
+        - pattern: $FROM.$LOG($SINK, ...)
+        - pattern: $FROM.$LOG(..., msg=$SINK, ...)
+        - pattern: $APP.logger.$LOG($SINK, ...)
+      - metavariable-regex:
+          metavariable: $LOG
+          regex: ^(info|warning|error|critical|log|exception|handle)$
+    to: $SINK
+  - from: $FROM
+    patterns:
+    - patterns:
+      - pattern-either:
+        - pattern-inside: '$SET = { $ITEM, ... }
+
+            ...
+
+            '
+        - pattern-inside: '$SET = set(...)
+
+            ...
+
+            '
+        - pattern-inside: '$OTHERSET = { $ITEM, ... }
+
+            ...
+
+            '
+        - pattern-inside: '$OTHERSET = set(...)
+
+            ...
+
+            '
+      - pattern-either:
+        - pattern: $SET.update(..., $FROM, ...)
+        - pattern: $SET.intersection_update(..., $FROM, ...)
+        - pattern: $SET.difference_update(..., $FROM, ...)
+        - pattern: $SET.symmetric_difference_update(..., $FROM, ...)
+        - pattern: $SET.add($FROM)
+        - pattern: $SET |= $FROM
+        - pattern: $SET &= $FROM
+        - pattern: $SET -= $FROM
+        - pattern: $SET ^= $FROM
+    to: $SET
+  - from: $FORM
+    patterns:
+    - pattern: $FORM.populate_obj($OBJ)
+    to: $OBJ
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern-inside: "class $CLS:\n  ...\n  $OBJ: sqlobject.SQLObject\n  ...\n"
+      - pattern-inside: "class $CLS:\n  ...\n  $OBJ: sqlobject.SQLObject = ...\n \
+          \ ...\n"
+      - pattern-inside: "class $OBJ(..., sqlobject.SQLObject, ...):\n  ...\n...\n"
+      - pattern-inside: "def $FUN(..., $OBJ: sqlobject.SQLObject, ...):\n  ...\n"
+      - pattern-inside: '$OBJ: sqlobject.SQLObject
+
+          ...
+
+          '
+      - pattern-inside: '$OBJ: sqlobject.SQLObject = ...
+
+          ...
+
+          '
+      - pattern-inside: "if isinstance($OBJ, sqlobject.SQLObject):\n  ...\n"
+      - pattern-inside: "if isinstance($OBJ, (..., sqlobject.SQLObject, ...)):\n \
+          \ ...\n"
+      - pattern-inside: "if type($OBJ) == sqlobject.SQLObject:\n  ...\n"
+      - pattern-inside: '$OBJ = sqlobject.SQLObject(...)
+
+          ...
+
+          '
+    - pattern-either:
+      - patterns:
+        - pattern-either:
+          - pattern: $OBJ.select($SINK, ...)
+          - pattern: $OBJ.select(..., clause=$SINK, ...)
+          - pattern: $OBJ.select($ARG_1, $ARG_2, $SINK, ...)
+          - pattern: $OBJ.select(..., orderBy=$SINK, ...)
+          - pattern: $OBJ.select($ARG_1, $ARG_2, $ARG_3, $ARG_4, $ARG_5, $ARG_6, $ARG_7,
+              $ARG_8, $SINK, ...)
+          - pattern: $OBJ.select(..., join=$SINK, ...)
+    - focus-metavariable: $SINK
+  - patterns:
+    - pattern-either:
+      - patterns:
+        - pattern-either:
+          - pattern: sqlobject.sqlbuilder.Select($SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Select(..., items=$SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Select($ARG_1, $SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Select(..., where=$SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Select($ARG_1, $ARG_2, $SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Select(..., groupBy=$SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Select($ARG_1, $ARG_2, $ARG_3, $SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Select(..., having=$SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Select($ARG_1, $ARG_2, $ARG_3, $ARG_4, $SINK,
+              ...)
+          - pattern: sqlobject.sqlbuilder.Select(..., orderBy=$SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Select($ARG_1, $ARG_2, $ARG_3, $ARG_4, $ARG_5,
+              $ARG_6, $SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Select(..., join=$SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Select($ARG_1, $ARG_2, $ARG_3, $ARG_4, $ARG_5,
+              $ARG_6, $ARG_7, $ARG_8, $ARG_9, $ARG_10, $ARG_11, $ARG_12, $SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Select(..., clause=$SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Select($ARG_1, $ARG_2, $ARG_3, $ARG_4, $ARG_5,
+              $ARG_6, $ARG_7, $ARG_8, $ARG_9, $ARG_10, $ARG_11, $ARG_12, $ARG_13,
+              $ARG_14, $SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Select(..., distinctOn=$SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Insert($SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Insert(..., table=$SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Insert($ARG_1, $ARG_2, $ARG_3, $SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Insert(..., template=$SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Update($SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Update(..., table=$SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Update($ARG_1, $ARG_2, $SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Update(..., template=$SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Update($ARG_1, $ARG_2, $ARG_3, $SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Update(..., where=$SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Replace($SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Replace(..., table=$SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Replace($ARG_1, $ARG_2, $SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Replace(..., template=$SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Replace($ARG_1, $ARG_2, $ARG_3, $SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Replace(..., where=$SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Delete($SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Delete(..., table=$SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Delete($ARG_1, $SINK, ...)
+          - pattern: sqlobject.sqlbuilder.Delete(..., where=$SINK, ...)
+    - focus-metavariable: $SINK
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '$SELECT = sqlobject.sqlbuilder.Select(...)
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: $SELECT.newItems($SINK, ...)
+      - pattern: $SELECT.newItems(..., items=$SINK, ...)
+      - pattern: $SELECT.newClause($SINK, ...)
+      - pattern: $SELECT.newClause(..., new_clause=$SINK, ...)
+      - pattern: $SELECT.orderBy($SINK, ...)
+      - pattern: $SELECT.orderBy(..., orderBy=$SINK, ...)
+      - pattern: $SELECT.filter($SINK, ...)
+      - pattern: $SELECT.filter(..., filter_clause=$SINK, ...)
+    - focus-metavariable: $SINK
+  pattern-sanitizers:
+  - patterns:
+    - pattern-either:
+      - pattern: int(...)
+      - pattern: bool(...)
+      - pattern: float(...)
+      - pattern: complex(...)
+      - pattern: oct(...)
+      - pattern: hex(...)
+      - pattern: bin(...)
+      - pattern: round(...)
+      - pattern: id(...)
+      - pattern: hash(...)
+      - pattern: len(...)
+      - pattern: type(...)
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '$DICT[$KEY]
+
+          ...
+
+          '
+      - pattern-inside: '$DICT = { $KEY: $VALUE for ... in ...}
+
+          ...
+
+          '
+      - pattern-inside: '$DICT.get($KEY, $DEFAULT)
+
+          ...
+
+          '
+      - pattern-inside: '$DICT = { }
+
+          ...
+
+          '
+      - pattern-inside: '$DICT = { $KEY: $VALUE, ... }
+
+          ...
+
+          '
+      - pattern-inside: '$DICT = dict(...)
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: $DICT.clear()
+      - pattern: $DICT.len()
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '$LIST = [ ... ]
+
+          ...
+
+          '
+      - pattern-inside: '$LIST = list(...)
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: $LIST.clear()
+      - pattern: $LIST.count(...)
+      - pattern: $LIST.index(...)
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '$SET = { $ITEM, ... }
+
+          ...
+
+          '
+      - pattern-inside: '$SET = set(...)
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: $SET.len()
+      - pattern: $SET.clear()
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '$SET = { $ITEM, ... }
+
+          ...
+
+          '
+      - pattern-inside: '$SET = { $ITEM for ... in ...}
+
+          ...
+
+          '
+      - pattern-inside: '$SET = set(...)
+
+          ...
+
+          '
+      - pattern-inside: '$SET = frozenset(...)
+
+          ...
+
+          '
+      - pattern-inside: '$OTHERSET = { $ITEM, ... }
+
+          ...
+
+          '
+      - pattern-inside: '$OTHERSET = set(...)
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: $SET.isdisjoint($OTHERSET)
+      - pattern: $SET.difference($OTHERSET)
+      - pattern: $SET.issubset($OTHERSET)
+      - pattern: $SET < $OTHERSET
+      - pattern: $SET <= $OTHERSET
+      - pattern: $SET.issuperset($OTHERSET)
+      - pattern: $SET > $OTHERSET
+      - pattern: $SET >= $OTHERSET
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '$TUPLE = ( $ITEM, ... )
+
+          ...
+
+          '
+      - pattern-inside: '$TUPLE = $ITEM, ...
+
+          ...
+
+          '
+      - pattern-inside: '$TUPLE = tuple(...)
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: $TUPLE.len()
+  - pattern-either:
+    - patterns:
+      - pattern: sqlalchemy.select(...).$FUNC(...)
+      - pattern-not: sqlalchemy.select(...).from_statement(...)
+      - pattern-not: sqlalchemy.select(...).prefix_with(...)
+      - pattern-not: sqlalchemy.select(...).suffix_with(...)
+    - pattern: sqlalchemy.select(...)
+    - pattern: sqlalchemy.table(...)
+    - pattern: sqlalchemy.table(...).$FUNC(...)
+    - pattern: sqlalchemy.bindparam(...)
+    - pattern: sqlalchemy.bindparams(...)
+    - pattern: $STMT.bindparam(...)
+    - pattern: $STMT.bindparams(...)
+    - patterns:
+      - pattern: $COLUMN.$FUNC(...)
+      - pattern-not: $COLUMN.$FUNC(..., autoescape=False, ...)
+      - metavariable-regex:
+          metavariable: $FUNC
+          regex: ^(contains|endswith|like|startswith|icontains|iendswith|ilike|istartswith|not_ilike|not_like|notilike|notlike|regexp_match|regexp_replace)$
+  - pattern-either:
+    - pattern: sqlobject.sqlbuilder.func.$ANY(...)
+    - pattern: $ENTITY.q.$FIELD.startswith(...)
+    - pattern: $ENTITY.q.$FIELD.endswith(...)
+    - pattern: $ENTITY.q.$FIELD.contains(...)
+    - pattern: ALL(...)
+    - pattern: AND(...)
+    - pattern: ANY(...)
+    - pattern: CONTAINSSTRING(...)
+    - pattern: CROSSJOIN(...)
+    - pattern: ENDSWITH(...)
+    - pattern: EXISTS(...)
+    - pattern: FULLJOIN(...)
+    - pattern: FULLJOINConditional(...)
+    - pattern: FULLJOINOn(...)
+    - pattern: FULLJOINUsing(...)
+    - pattern: FULLOUTERJOIN(...)
+    - pattern: FULLOUTERJOINConditional(...)
+    - pattern: FULLOUTERJOINOn(...)
+    - pattern: FULLOUTERJOINUsing(...)
+    - pattern: IN(...)
+    - pattern: INNERJOIN(...)
+    - pattern: INNERJOINConditional(...)
+    - pattern: INNERJOINOn(...)
+    - pattern: INNERJOINUsing(...)
+    - pattern: ISNOTNULL(...)
+    - pattern: ISNULL(...)
+    - pattern: JOIN(...)
+    - pattern: LEFTJOIN(...)
+    - pattern: LEFTJOINConditional(...)
+    - pattern: LEFTJOINOn(...)
+    - pattern: LEFTJOINUsing(...)
+    - pattern: LEFTOUTERJOIN(...)
+    - pattern: LEFTOUTERJOINConditional(...)
+    - pattern: LEFTOUTERJOINOn(...)
+    - pattern: LEFTOUTERJOINUsing(...)
+    - pattern: NATURALFULLJOIN(...)
+    - pattern: NATURALFULLOUTERJOIN(...)
+    - pattern: NATURALJOIN(...)
+    - pattern: NATURALLEFTJOIN(...)
+    - pattern: NATURALLEFTOUTERJOIN(...)
+    - pattern: NATURALRIGHTJOIN(...)
+    - pattern: NATURALRIGHTOUTERJOIN(...)
+    - pattern: NOT(...)
+    - pattern: NOTEXISTS(...)
+    - pattern: NOTIN(...)
+    - pattern: OR(...)
+    - pattern: RIGHTJOIN(...)
+    - pattern: RIGHTJOINConditional(...)
+    - pattern: RIGHTJOINOn(...)
+    - pattern: RIGHTJOINUsing(...)
+    - pattern: RIGHTOUTERJOIN(...)
+    - pattern: RIGHTOUTERJOINConditional(...)
+    - pattern: RIGHTOUTERJOINOn(...)
+    - pattern: RIGHTOUTERJOINUsing(...)
+    - pattern: SOME(...)
+    - pattern: STARTSWITH(...)
+    - pattern: STRAIGHTJOIN(...)
+  - patterns:
+    - pattern-either:
+      - pattern: $ENTITY.q.$FIELD == $X
+      - pattern: $ENTITY.q.$FIELD != $X
+      - pattern: $ENTITY.q.$FIELD >= $X
+      - pattern: $ENTITY.q.$FIELD <= $X
+      - pattern: $ENTITY.q.$FIELD > $X
+      - pattern: $ENTITY.q.$FIELD < $X
+      - pattern: $X == $ENTITY.q.$FIELD
+      - pattern: $X != $ENTITY.q.$FIELD
+      - pattern: $X >= $ENTITY.q.$FIELD
+      - pattern: $X <= $ENTITY.q.$FIELD
+      - pattern: $X > $ENTITY.q.$FIELD
+      - pattern: $X < $ENTITY.q.$FIELD

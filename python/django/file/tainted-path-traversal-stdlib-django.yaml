@@ -1,0 +1,568 @@
+rules:
+- id: tainted-path-traversal-stdlib-django
+  message: The application builds a file path from potentially untrusted data, which
+    can lead to a path traversal vulnerability. An attacker can manipulate the path
+    which the application uses to access files. If the application does not validate
+    user input and sanitize file paths, sensitive files such as configuration or user
+    data can be accessed, potentially creating or overwriting files. To prevent this
+    vulnerability, validate and sanitize any input that is used to create references
+    to file paths. Also, enforce strict file access controls. For example, choose
+    privileges allowing public-facing applications to access only the required files.
+  severity: ERROR
+  metadata:
+    likelihood: MEDIUM
+    impact: HIGH
+    confidence: HIGH
+    category: security
+    subcategory:
+    - vuln
+    cwe:
+    - 'CWE-22: Improper Limitation of a Pathname to a Restricted Directory (''Path
+      Traversal'')'
+    cwe2020-top25: true
+    cwe2021-top25: true
+    cwe2022-top25: true
+    functional-categories:
+    - file::sink::file-access::fileinput
+    - file::sink::file-access::io
+    - file::sink::file-access::linecache
+    - file::sink::file-access::os
+    - file::sink::file-access::shutil
+    - file::sink::file-access::stdlib
+    - file::sink::file-access::stdlib2
+    - file::sink::file-access::stdlib3
+    - file::sink::file-access::tempfile
+    - web::source::cookie::django_rest_frameworkapi
+    - web::source::form-data::django_rest_frameworkapi
+    - web::source::header::django_rest_frameworkapi
+    - web::source::http-body::django_rest_frameworkapi
+    - web::source::http-params::django_rest_frameworkapi
+    - web::source::url-path-params::django_rest_frameworkapi
+    owasp:
+    - A01:2021 - Broken Access Control
+    - A05:2017 - Broken Access Control
+    references:
+    - https://owasp.org/Top10/A01_2021-Broken_Access_Control
+    - https://owasp.org/www-community/attacks/Path_Traversal
+    - https://portswigger.net/web-security/file-path-traversal
+    - https://www.stackhawk.com/blog/django-path-traversal-guide-examples-and-prevention/
+    technology:
+    - codecs
+    - django_rest_frameworkapi
+    - fileaccess
+    - fileinput
+    - io
+    - linecache
+    - os
+    - shutil
+    - stdlib
+    - stdlib2
+    - stdlib3
+    - tempfile
+    - web
+  languages:
+  - python
+  mode: taint
+  options:
+    interfile: true
+    symbolic_propagation: true
+    taint_assume_safe_booleans: true
+    taint_assume_safe_numbers: true
+  pattern-sources:
+  - label: __SOURCE__
+    patterns:
+    - patterns:
+      - pattern-either:
+        - pattern: $DJANGO_REQUEST.query_params
+        - pattern: $DJANGO_REQUEST.stream
+        - pattern: $DJANGO_REQUEST.content_type
+        - pattern: $DJANGO_REQUEST.data
+        - pattern: $DJANGO_REQUEST.user_agent_string
+        - pattern: $DJANGO_REQUEST.user_agent
+        - pattern: $DJANGO_REQUEST.body
+        - pattern: $DJANGO_REQUEST.headers
+        - pattern: $DJANGO_REQUEST.path
+        - pattern: $DJANGO_REQUEST.path_info
+        - pattern: $DJANGO_REQUEST.META
+        - pattern: $DJANGO_REQUEST.REQUEST
+        - pattern: $DJANGO_REQUEST.GET
+        - pattern: $DJANGO_REQUEST.POST
+        - pattern: $DJANGO_REQUEST.FILES
+        - pattern: $DJANGO_REQUEST.DATA
+        - pattern: $DJANGO_REQUEST.QUERY_PARAMS
+        - pattern: $DJANGO_REQUEST.COOKIES
+        - pattern: $DJANGO_REQUEST.get_host()
+        - pattern: $DJANGO_REQUEST.get_full_path(...)
+        - pattern: $DJANGO_REQUEST.get_full_path_info(...)
+        - pattern: $DJANGO_REQUEST.get_raw_uri(...)
+        - pattern: $DJANGO_REQUEST.encoding(...)
+        - pattern: $DJANGO_REQUEST.body(...)
+        - pattern: $DJANGO_REQUEST.read(...)
+        - pattern: $DJANGO_REQUEST.readline()
+        - pattern: $DJANGO_REQUEST.readlines()
+        - pattern: $DJANGO_REQUEST.get_signed_cookie(...)
+    requires: DJANGO_REQUEST
+  - label: DJANGO_REQUEST
+    patterns:
+    - patterns:
+      - pattern-either:
+        - pattern: "@rest_framework.decorators.api_view(...)\ndef $FUNC($DJANGO_REQUEST,\
+            \ ...):\n  ...\n"
+        - patterns:
+          - pattern: "class $CLS($PARENT_CLASS):\n    ...\n    def $FUNC(self, $DJANGO_REQUEST,\
+              \ ...):\n      ...\n"
+          - metavariable-regex:
+              metavariable: $PARENT_CLASS
+              regex: ^rest_framework\.+
+          - metavariable-regex:
+              metavariable: $FUNC
+              regex: get|post|put|patch|delete|head|options|dispatch|initial|throttled|retrieve|update|partial_update|destroy|list|create
+      - focus-metavariable: $DJANGO_REQUEST
+  - label: PATH
+    patterns:
+    - patterns:
+      - pattern-either:
+        - pattern: pathlib.Path(...)
+        - pattern: pathlib.PosixPath(...)
+        - pattern: pathlib.WindowsPath(...)
+        - pattern: pathlib.PurePosixPath(...)
+        - pattern: pathlib.PureWindowsPath(...)
+        - pattern: pathlib.PurePath(...)
+        - pattern: pathlib2.Path(...)
+        - pattern: pathlib2.PosixPath(...)
+        - pattern: pathlib2.WindowsPath(...)
+        - pattern: pathlib2.PurePosixPath(...)
+        - pattern: pathlib2.PureWindowsPath(...)
+        - pattern: pathlib2.PurePath(...)
+  pattern-propagators:
+  - from: $DEFAULT
+    patterns:
+    - patterns:
+      - pattern-either:
+        - pattern-inside: '$DICT[$KEY]
+
+            ...
+
+            '
+        - pattern-inside: '$DICT.get($KEY, $DEFAULT)
+
+            ...
+
+            '
+        - pattern-inside: '$DICT = { ... }
+
+            ...
+
+            '
+        - pattern-inside: '$DICT = dict(...)
+
+            ...
+
+            '
+      - pattern-either:
+        - pattern: $DICT.get($FIELD, $DEFAULT)
+        - pattern: $DICT.setdefault($KEY, $DEFAULT)
+    to: $DICT
+  - from: $FROM_DICT
+    patterns:
+    - patterns:
+      - pattern-either:
+        - pattern-inside: '$TO_DICT[$KEY]
+
+            ...
+
+            '
+        - pattern-inside: '$TO_DICT.get($KEY, $DEFAULT)
+
+            ...
+
+            '
+        - pattern-inside: '$TO_DICT = { ... }
+
+            ...
+
+            '
+        - pattern-inside: '$TO_DICT = dict(...)
+
+            ...
+
+            '
+        - pattern-inside: '$FROM_DICT[$KEY]
+
+            ...
+
+            '
+        - pattern-inside: '$FROM_DICT.get($KEY, $DEFAULT)
+
+            ...
+
+            '
+        - pattern-inside: '$FROM_DICT = { ... }
+
+            ...
+
+            '
+        - pattern-inside: '$FROM_DICT = dict(...)
+
+            ...
+
+            '
+      - pattern-either:
+        - pattern: $TO_DICT.update($FROM_DICT)
+        - pattern: $TO_DICT | $FROM_DICT
+        - pattern: $TO_DICT |= $FROM_DICT
+    to: $TO_DICT
+  - from: $FROM
+    patterns:
+    - patterns:
+      - pattern-either:
+        - pattern-inside: '$LIST = [ ... ]
+
+            ...
+
+            '
+        - pattern-inside: '$LIST = list(...)
+
+            ...
+
+            '
+      - pattern-either:
+        - pattern: $LIST.append($FROM)
+        - pattern: $LIST.extend($FROM)
+        - pattern: $LIST.insert($INDEX, $FROM)
+    to: $LIST
+  - from: $FROM
+    patterns:
+    - patterns:
+      - pattern-either:
+        - pattern: $FROM.$LOG($SINK, ...)
+        - pattern: $FROM.$LOG(..., msg=$SINK, ...)
+        - pattern: $APP.logger.$LOG($SINK, ...)
+      - metavariable-regex:
+          metavariable: $LOG
+          regex: ^(info|warning|error|critical|log|exception|handle)$
+    to: $SINK
+  - from: $FROM
+    patterns:
+    - patterns:
+      - pattern-either:
+        - pattern-inside: '$SET = { $ITEM, ... }
+
+            ...
+
+            '
+        - pattern-inside: '$SET = set(...)
+
+            ...
+
+            '
+        - pattern-inside: '$OTHERSET = { $ITEM, ... }
+
+            ...
+
+            '
+        - pattern-inside: '$OTHERSET = set(...)
+
+            ...
+
+            '
+      - pattern-either:
+        - pattern: $SET.update(..., $FROM, ...)
+        - pattern: $SET.intersection_update(..., $FROM, ...)
+        - pattern: $SET.difference_update(..., $FROM, ...)
+        - pattern: $SET.symmetric_difference_update(..., $FROM, ...)
+        - pattern: $SET.add($FROM)
+        - pattern: $SET |= $FROM
+        - pattern: $SET &= $FROM
+        - pattern: $SET -= $FROM
+        - pattern: $SET ^= $FROM
+    to: $SET
+  - from: $FORM
+    patterns:
+    - pattern: $FORM.populate_obj($OBJ)
+    to: $OBJ
+  pattern-sinks:
+  - pattern-either:
+    - pattern-either:
+      - patterns:
+        - pattern-either:
+          - pattern: open($SINK, ...)
+          - pattern: open(..., file=$SINK, ...)
+        - focus-metavariable: $SINK
+      - patterns:
+        - pattern: os.$FUNC($SINK, ...)
+        - metavariable-regex:
+            metavariable: $FUNC
+            regex: ^(rename|replace|link|symlink|dup|dup2|sendfile|splice|renames)$
+        - focus-metavariable: $SINK
+      - patterns:
+        - pattern: os.$FUNC($FIRST, $SINK, ...)
+        - metavariable-regex:
+            metavariable: $FUNC
+            regex: ^(rename|replace|link|symlink|dup|dup2|sendfile|splice|renames)$
+        - focus-metavariable: $SINK
+      - patterns:
+        - pattern: os.$FUNC(... , $ARG=$SINK, ...)
+        - metavariable-regex:
+            metavariable: $FUNC
+            regex: ^(rename|replace|link|symlink|dup|dup2|sendfile|splice|renames)$
+        - metavariable-regex:
+            metavariable: $ARG
+            regex: ^(src|dst|fd|fd2|out_fd|in_fd|old|new)$
+        - focus-metavariable: $SINK
+      - patterns:
+        - pattern: os.$FUNC($SINK, ...)
+        - metavariable-regex:
+            metavariable: $FUNC
+            regex: ^(open|chmod|fsencode|fsdecode|fdopen|ftruncate|pread|preadv|pwrite|pwritev|read|readv|write|writev|mkfifo|readlink|remove|truncate|memfd_create)$
+        - focus-metavariable: $SINK
+      - patterns:
+        - pattern: os.$FUNC(..., $ARG=$SINK, ...)
+        - metavariable-regex:
+            metavariable: $FUNC
+            regex: ^(open|chmod|fsencode|fsdecode|fdopen|ftruncate|pread|preadv|pwrite|pwritev|read|readv|write|writev|mkfifo|readlink|remove|truncate|memfd_create)$
+        - metavariable-regex:
+            metavariable: $ARG
+            regex: ^(path|filename|fd|)$
+        - focus-metavariable: $SINK
+      - patterns:
+        - pattern: io.$FUNC($SINK, ...)
+        - metavariable-regex:
+            metavariable: $FUNC
+            regex: ^(open|open_code)$
+        - focus-metavariable: $SINK
+      - patterns:
+        - pattern-either:
+          - pattern: io.open(..., file=$SINK, ...)
+          - pattern: io.open_code(..., path=$SINK, ...)
+        - focus-metavariable: $SINK
+    - pattern-either:
+      - patterns:
+        - pattern: codecs.$FUNC($SINK, ...)
+        - metavariable-regex:
+            metavariable: $FUNC
+            regex: ^(open|EncodedFile|iterencode|iterdecode|StreamReader|StreamRecorder)$
+        - focus-metavariable: $SINK
+      - patterns:
+        - pattern: codecs.$FUNC(..., $ARG=$SINK, ...)
+        - metavariable-regex:
+            metavariable: $FUNC
+            regex: ^(open|EncodedFile|iterencode|iterdecode|StreamReader|StreamRecorder)$
+        - metavariable-regex:
+            metavariable: $ARG
+            regex: ^(filename|file|iterator|stream)$
+        - focus-metavariable: $SINK
+      - patterns:
+        - pattern-either:
+          - pattern: linecache.getline($SINK, ...)
+          - pattern: linecache.getline(..., filename=$SINK, ...)
+        - focus-metavariable: $SINK
+      - patterns:
+        - pattern: fileinput.input((..., $SINK, ...), ...)
+        - focus-metavariable: $SINK
+      - patterns:
+        - pattern: fileinput.input(..., files=(..., $SINK, ...), ...)
+        - focus-metavariable: $SINK
+      - patterns:
+        - pattern: fileinput.FileInput((..., $SINK, ...), ...)
+        - focus-metavariable: $SINK
+      - patterns:
+        - pattern: fileinput.FileInput(..., files=(..., $SINK, ...), ...)
+        - focus-metavariable: $SINK
+    - pattern-either:
+      - patterns:
+        - pattern: tempfile.$TEMPFILE(..., dir=$SINK, ...)
+        - metavariable-regex:
+            metavariable: $TEMPFILE
+            regex: ^(TemporaryFile|NamedTemporaryFile|SpooledTemporaryFile)$
+        - focus-metavariable: $SINK
+      - patterns:
+        - pattern-either:
+          - pattern: tempfile.TemporaryFile($MODE, $BUFFERING, $ENCODING, $NEWLINE,
+              $SUFFIX, $PREFIX, $DIR, ...)
+          - pattern: tempfile.NamedTemporaryFile($MODE, $BUFFERING, $ENCODING, $NEWLINE,
+              $SUFFIX, $PREFIX, $DIR, ...)
+          - pattern: tempfile.SpooledTemporaryFile($MAX_SIZE, $MODE, $BUFF, $ENC,
+              $NEWLINE, $SUFFIX, $PREFIX, $DIR, ...)
+        - focus-metavariable: $DIR
+      - patterns:
+        - pattern: shutil.$FUNC($SINK, ...)
+        - metavariable-regex:
+            metavariable: $FUNC
+            regex: ^(copyfileobj|copyfile|copymode|copystat|copy|copy2|copytree|rmtree|move|chown|unpack_archive)$
+        - focus-metavariable: $SINK
+      - patterns:
+        - pattern: shutil.unpack_archive($FIRST, $SINK)
+        - focus-metavariable: $SINK
+      - patterns:
+        - pattern: shutil.$FUNC($FIRST, $SINK, ...)
+        - metavariable-regex:
+            metavariable: $FUNC
+            regex: ^(copyfileobj|copyfile|copymode|copystat|copy|copy2|copytree|move)$
+        - focus-metavariable: $SINK
+      - patterns:
+        - pattern: shutil.$FUNC(..., $ARG=$SINK, ...)
+        - metavariable-regex:
+            metavariable: $FUNC
+            regex: ^(copyfileobj|copyfile|copymode|copystat|copy|copy2|copytree|rmtree|move|chown|unpack_archive)$
+        - metavariable-regex:
+            metavariable: $ARG
+            regex: ^(fsrc|fdst|src|dst|path|filename|extract_dir)$
+        - focus-metavariable: $SINK
+    requires: __SOURCE__
+  - pattern-either:
+    - patterns:
+      - pattern: $PATH.$FUNC($SINK)
+      - metavariable-regex:
+          metavariable: $FUNC
+          regex: ^(rename|replace|symlink_to|hardlink_to)$
+      - focus-metavariable: $SINK
+    - patterns:
+      - pattern: $PATH.$FUNC(...)
+      - metavariable-regex:
+          metavariable: $FUNC
+          regex: ^(open|read_bytes|read_text|readlink|rmdir|touch|rename|replace|symlink_to|hardlink_to|write_bytes|write_text|chmod)$
+    requires: __SOURCE__ and PATH
+  pattern-sanitizers:
+  - patterns:
+    - pattern-either:
+      - pattern: int(...)
+      - pattern: bool(...)
+      - pattern: float(...)
+      - pattern: complex(...)
+      - pattern: oct(...)
+      - pattern: hex(...)
+      - pattern: bin(...)
+      - pattern: round(...)
+      - pattern: id(...)
+      - pattern: hash(...)
+      - pattern: len(...)
+      - pattern: type(...)
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '$DICT[$KEY]
+
+          ...
+
+          '
+      - pattern-inside: '$DICT = { $KEY: $VALUE for ... in ...}
+
+          ...
+
+          '
+      - pattern-inside: '$DICT.get($KEY, $DEFAULT)
+
+          ...
+
+          '
+      - pattern-inside: '$DICT = { }
+
+          ...
+
+          '
+      - pattern-inside: '$DICT = { $KEY: $VALUE, ... }
+
+          ...
+
+          '
+      - pattern-inside: '$DICT = dict(...)
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: $DICT.clear()
+      - pattern: $DICT.len()
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '$LIST = [ ... ]
+
+          ...
+
+          '
+      - pattern-inside: '$LIST = list(...)
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: $LIST.clear()
+      - pattern: $LIST.count(...)
+      - pattern: $LIST.index(...)
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '$SET = { $ITEM, ... }
+
+          ...
+
+          '
+      - pattern-inside: '$SET = set(...)
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: $SET.len()
+      - pattern: $SET.clear()
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '$SET = { $ITEM, ... }
+
+          ...
+
+          '
+      - pattern-inside: '$SET = { $ITEM for ... in ...}
+
+          ...
+
+          '
+      - pattern-inside: '$SET = set(...)
+
+          ...
+
+          '
+      - pattern-inside: '$SET = frozenset(...)
+
+          ...
+
+          '
+      - pattern-inside: '$OTHERSET = { $ITEM, ... }
+
+          ...
+
+          '
+      - pattern-inside: '$OTHERSET = set(...)
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: $SET.isdisjoint($OTHERSET)
+      - pattern: $SET.difference($OTHERSET)
+      - pattern: $SET.issubset($OTHERSET)
+      - pattern: $SET < $OTHERSET
+      - pattern: $SET <= $OTHERSET
+      - pattern: $SET.issuperset($OTHERSET)
+      - pattern: $SET > $OTHERSET
+      - pattern: $SET >= $OTHERSET
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '$TUPLE = ( $ITEM, ... )
+
+          ...
+
+          '
+      - pattern-inside: '$TUPLE = $ITEM, ...
+
+          ...
+
+          '
+      - pattern-inside: '$TUPLE = tuple(...)
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: $TUPLE.len()
+  - patterns:
+    - pattern: werkzeug.utils.secure_filename(...)

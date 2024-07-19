@@ -1,0 +1,412 @@
+rules:
+- id: tainted-log-injection-stdlib-django
+  message: Detected a logger that logs user input without properly neutralizing the
+    output. The log message could contain characters like ` ` and ` ` and cause an
+    attacker to forge log entries or include malicious content into the logs. Use
+    proper input validation and/or output encoding to prevent log entries from being
+    forged.
+  severity: INFO
+  metadata:
+    likelihood: LOW
+    impact: MEDIUM
+    confidence: HIGH
+    category: security
+    subcategory:
+    - vuln
+    cwe:
+    - 'CWE-117: Improper Output Neutralization for Logs'
+    functional-categories:
+    - log::sink::log::stdlib
+    - log::sink::log::stdlib2
+    - log::sink::log::stdlib3
+    - web::source::cookie::django_rest_frameworkapi
+    - web::source::form-data::django_rest_frameworkapi
+    - web::source::header::django_rest_frameworkapi
+    - web::source::http-body::django_rest_frameworkapi
+    - web::source::http-params::django_rest_frameworkapi
+    - web::source::url-path-params::django_rest_frameworkapi
+    owasp:
+    - A09:2021 - Security Logging and Monitoring Failures
+    references:
+    - https://cwe.mitre.org/data/definitions/117.html
+    - https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures
+    technology:
+    - django_rest_frameworkapi
+    - log
+    - logging
+    - stdlib
+    - stdlib2
+    - stdlib3
+    - web
+  languages:
+  - python
+  mode: taint
+  options:
+    interfile: true
+    symbolic_propagation: true
+    taint_assume_safe_booleans: true
+    taint_assume_safe_numbers: true
+  pattern-sources:
+  - label: __SOURCE__
+    patterns:
+    - patterns:
+      - pattern-either:
+        - pattern: $DJANGO_REQUEST.query_params
+        - pattern: $DJANGO_REQUEST.stream
+        - pattern: $DJANGO_REQUEST.content_type
+        - pattern: $DJANGO_REQUEST.data
+        - pattern: $DJANGO_REQUEST.user_agent_string
+        - pattern: $DJANGO_REQUEST.user_agent
+        - pattern: $DJANGO_REQUEST.body
+        - pattern: $DJANGO_REQUEST.headers
+        - pattern: $DJANGO_REQUEST.path
+        - pattern: $DJANGO_REQUEST.path_info
+        - pattern: $DJANGO_REQUEST.META
+        - pattern: $DJANGO_REQUEST.REQUEST
+        - pattern: $DJANGO_REQUEST.GET
+        - pattern: $DJANGO_REQUEST.POST
+        - pattern: $DJANGO_REQUEST.FILES
+        - pattern: $DJANGO_REQUEST.DATA
+        - pattern: $DJANGO_REQUEST.QUERY_PARAMS
+        - pattern: $DJANGO_REQUEST.COOKIES
+        - pattern: $DJANGO_REQUEST.get_host()
+        - pattern: $DJANGO_REQUEST.get_full_path(...)
+        - pattern: $DJANGO_REQUEST.get_full_path_info(...)
+        - pattern: $DJANGO_REQUEST.get_raw_uri(...)
+        - pattern: $DJANGO_REQUEST.encoding(...)
+        - pattern: $DJANGO_REQUEST.body(...)
+        - pattern: $DJANGO_REQUEST.read(...)
+        - pattern: $DJANGO_REQUEST.readline()
+        - pattern: $DJANGO_REQUEST.readlines()
+        - pattern: $DJANGO_REQUEST.get_signed_cookie(...)
+    requires: DJANGO_REQUEST
+  - label: DJANGO_REQUEST
+    patterns:
+    - patterns:
+      - pattern-either:
+        - pattern: "@rest_framework.decorators.api_view(...)\ndef $FUNC($DJANGO_REQUEST,\
+            \ ...):\n  ...\n"
+        - patterns:
+          - pattern: "class $CLS($PARENT_CLASS):\n    ...\n    def $FUNC(self, $DJANGO_REQUEST,\
+              \ ...):\n      ...\n"
+          - metavariable-regex:
+              metavariable: $PARENT_CLASS
+              regex: ^rest_framework\.+
+          - metavariable-regex:
+              metavariable: $FUNC
+              regex: get|post|put|patch|delete|head|options|dispatch|initial|throttled|retrieve|update|partial_update|destroy|list|create
+      - focus-metavariable: $DJANGO_REQUEST
+  - label: STDLIB_LOGGER
+    patterns:
+    - pattern-either:
+      - patterns:
+        - pattern-inside: "@$APP.$FUNC(...)\ndef $ROUTE(...):\n  ...\n"
+        - pattern: $APP.logger
+      - pattern: logging.getLogger(...)
+  pattern-propagators:
+  - from: $DEFAULT
+    patterns:
+    - patterns:
+      - pattern-either:
+        - pattern-inside: '$DICT[$KEY]
+
+            ...
+
+            '
+        - pattern-inside: '$DICT.get($KEY, $DEFAULT)
+
+            ...
+
+            '
+        - pattern-inside: '$DICT = { ... }
+
+            ...
+
+            '
+        - pattern-inside: '$DICT = dict(...)
+
+            ...
+
+            '
+      - pattern-either:
+        - pattern: $DICT.get($FIELD, $DEFAULT)
+        - pattern: $DICT.setdefault($KEY, $DEFAULT)
+    to: $DICT
+  - from: $FROM_DICT
+    patterns:
+    - patterns:
+      - pattern-either:
+        - pattern-inside: '$TO_DICT[$KEY]
+
+            ...
+
+            '
+        - pattern-inside: '$TO_DICT.get($KEY, $DEFAULT)
+
+            ...
+
+            '
+        - pattern-inside: '$TO_DICT = { ... }
+
+            ...
+
+            '
+        - pattern-inside: '$TO_DICT = dict(...)
+
+            ...
+
+            '
+        - pattern-inside: '$FROM_DICT[$KEY]
+
+            ...
+
+            '
+        - pattern-inside: '$FROM_DICT.get($KEY, $DEFAULT)
+
+            ...
+
+            '
+        - pattern-inside: '$FROM_DICT = { ... }
+
+            ...
+
+            '
+        - pattern-inside: '$FROM_DICT = dict(...)
+
+            ...
+
+            '
+      - pattern-either:
+        - pattern: $TO_DICT.update($FROM_DICT)
+        - pattern: $TO_DICT | $FROM_DICT
+        - pattern: $TO_DICT |= $FROM_DICT
+    to: $TO_DICT
+  - from: $FROM
+    patterns:
+    - patterns:
+      - pattern-either:
+        - pattern-inside: '$LIST = [ ... ]
+
+            ...
+
+            '
+        - pattern-inside: '$LIST = list(...)
+
+            ...
+
+            '
+      - pattern-either:
+        - pattern: $LIST.append($FROM)
+        - pattern: $LIST.extend($FROM)
+        - pattern: $LIST.insert($INDEX, $FROM)
+    to: $LIST
+  - from: $FROM
+    patterns:
+    - patterns:
+      - pattern-either:
+        - pattern: $FROM.$LOG($SINK, ...)
+        - pattern: $FROM.$LOG(..., msg=$SINK, ...)
+        - pattern: $APP.logger.$LOG($SINK, ...)
+      - metavariable-regex:
+          metavariable: $LOG
+          regex: ^(info|warning|error|critical|log|exception|handle)$
+    to: $SINK
+  - from: $FROM
+    patterns:
+    - patterns:
+      - pattern-either:
+        - pattern-inside: '$SET = { $ITEM, ... }
+
+            ...
+
+            '
+        - pattern-inside: '$SET = set(...)
+
+            ...
+
+            '
+        - pattern-inside: '$OTHERSET = { $ITEM, ... }
+
+            ...
+
+            '
+        - pattern-inside: '$OTHERSET = set(...)
+
+            ...
+
+            '
+      - pattern-either:
+        - pattern: $SET.update(..., $FROM, ...)
+        - pattern: $SET.intersection_update(..., $FROM, ...)
+        - pattern: $SET.difference_update(..., $FROM, ...)
+        - pattern: $SET.symmetric_difference_update(..., $FROM, ...)
+        - pattern: $SET.add($FROM)
+        - pattern: $SET |= $FROM
+        - pattern: $SET &= $FROM
+        - pattern: $SET -= $FROM
+        - pattern: $SET ^= $FROM
+    to: $SET
+  - from: $FORM
+    patterns:
+    - pattern: $FORM.populate_obj($OBJ)
+    to: $OBJ
+  pattern-sinks:
+  - patterns:
+    - pattern-either:
+      - pattern: logging.$LOG($SINK, ...)
+      - pattern: logging.$LOG(..., msg=$SINK, ...)
+    - metavariable-regex:
+        metavariable: $LOG
+        regex: ^(info|warning|error|critical|exception|log)$
+    - focus-metavariable: $SINK
+    requires: __SOURCE__
+  - patterns:
+    - pattern-either:
+      - pattern: $LOGGER.$LOG($SINK, ...)
+      - pattern: $LOGGER.$LOG(..., msg=$SINK, ...)
+    - metavariable-regex:
+        metavariable: $LOG
+        regex: ^(info|warning|error|critical|log|exception|handle)$
+    - focus-metavariable: $SINK
+    requires: __SOURCE__ and STDLIB_LOGGER
+  pattern-sanitizers:
+  - patterns:
+    - pattern-either:
+      - pattern: int(...)
+      - pattern: bool(...)
+      - pattern: float(...)
+      - pattern: complex(...)
+      - pattern: oct(...)
+      - pattern: hex(...)
+      - pattern: bin(...)
+      - pattern: round(...)
+      - pattern: id(...)
+      - pattern: hash(...)
+      - pattern: len(...)
+      - pattern: type(...)
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '$DICT[$KEY]
+
+          ...
+
+          '
+      - pattern-inside: '$DICT = { $KEY: $VALUE for ... in ...}
+
+          ...
+
+          '
+      - pattern-inside: '$DICT.get($KEY, $DEFAULT)
+
+          ...
+
+          '
+      - pattern-inside: '$DICT = { }
+
+          ...
+
+          '
+      - pattern-inside: '$DICT = { $KEY: $VALUE, ... }
+
+          ...
+
+          '
+      - pattern-inside: '$DICT = dict(...)
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: $DICT.clear()
+      - pattern: $DICT.len()
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '$LIST = [ ... ]
+
+          ...
+
+          '
+      - pattern-inside: '$LIST = list(...)
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: $LIST.clear()
+      - pattern: $LIST.count(...)
+      - pattern: $LIST.index(...)
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '$SET = { $ITEM, ... }
+
+          ...
+
+          '
+      - pattern-inside: '$SET = set(...)
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: $SET.len()
+      - pattern: $SET.clear()
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '$SET = { $ITEM, ... }
+
+          ...
+
+          '
+      - pattern-inside: '$SET = { $ITEM for ... in ...}
+
+          ...
+
+          '
+      - pattern-inside: '$SET = set(...)
+
+          ...
+
+          '
+      - pattern-inside: '$SET = frozenset(...)
+
+          ...
+
+          '
+      - pattern-inside: '$OTHERSET = { $ITEM, ... }
+
+          ...
+
+          '
+      - pattern-inside: '$OTHERSET = set(...)
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: $SET.isdisjoint($OTHERSET)
+      - pattern: $SET.difference($OTHERSET)
+      - pattern: $SET.issubset($OTHERSET)
+      - pattern: $SET < $OTHERSET
+      - pattern: $SET <= $OTHERSET
+      - pattern: $SET.issuperset($OTHERSET)
+      - pattern: $SET > $OTHERSET
+      - pattern: $SET >= $OTHERSET
+  - patterns:
+    - pattern-either:
+      - pattern-inside: '$TUPLE = ( $ITEM, ... )
+
+          ...
+
+          '
+      - pattern-inside: '$TUPLE = $ITEM, ...
+
+          ...
+
+          '
+      - pattern-inside: '$TUPLE = tuple(...)
+
+          ...
+
+          '
+    - pattern-either:
+      - pattern: $TUPLE.len()

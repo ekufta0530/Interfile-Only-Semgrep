@@ -1,0 +1,62 @@
+rules:
+- id: django-cookie-secure-missing
+  message: Detected a cookie where the `Secure` flag is either missing or disabled.
+    The `Secure` cookie flag instructs the browser to forbid sending the cookie over
+    an insecure HTTP request. Set the `Secure` flag to `true` so the cookie will only
+    be sent over HTTPS.
+  severity: INFO
+  metadata:
+    likelihood: LOW
+    impact: LOW
+    confidence: HIGH
+    category: security
+    subcategory:
+    - vuln
+    cwe:
+    - 'CWE-614: Sensitive Cookie in HTTPS Session Without ''Secure'' Attribute'
+    functional-categories:
+    - web::search::cookie-config::django
+    - web::search::cookie-config::starlette
+    owasp:
+    - A05:2021 - Security Misconfiguration
+    references:
+    - https://owasp.org/Top10/A05_2021-Security_Misconfiguration
+    technology:
+    - cookie
+    - cookies
+    - django
+    - web
+  languages:
+  - python
+  fix: $RESPONSE.$SET_COOKIE($...ARGS, secure=True)
+  options:
+    interfile: true
+    symbolic_propagation: true
+  patterns:
+  - patterns:
+    - patterns:
+      - pattern-either:
+        - pattern: $RESPONSE.set_cookie(...)
+        - pattern: $RESPONSE.set_signed_cookie(...)
+      - metavariable-type:
+          metavariable: $RESPONSE
+          types:
+          - Response
+          - FileResponse
+          - Http404
+          - HttpResponseBadRequest
+          - HttpResponseForbidden
+          - HttpResponseGone
+          - HttpResponseNotAllowed
+          - HttpResponseNotFound
+          - HttpResponseNotModified
+          - HttpResponse
+          - HttpResponseBase
+          - StreamingHttpResponse
+          - HttpResponseServerError
+          - JsonResponse
+          - FileResponse
+    - pattern: $RESPONSE.$SET_COOKIE($...ARGS)
+    - pattern-not: $RESPONSE.$SET_COOKIE(..., secure=$FALSE, ...)
+    - pattern-not: $RESPONSE.$SET_COOKIE($KEY, $VALUE, $MAX_AGE, $EXPIRES, $PATH,
+        $DOMAIN, $FALSE, ...)
