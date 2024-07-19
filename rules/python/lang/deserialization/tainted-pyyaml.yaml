@@ -1,0 +1,11 @@
+rules:
+- id: tainted-pyyaml
+  message: The application may convert user-controlled data into an object, which
+    can lead to an insecure deserialization vulnerability. An attacker can create
+    a malicious serialized object, pass it to the application, and take advantage
+    of the deserialization process to perform Denial-of-service (DoS), Remote code
+    execution (RCE), or bypass access control measures. PyYAML's `yaml` module is
+    as powerful as `pickle` and so may call auny Python function. It is recommended
+    to secure your application by using `yaml.SafeLoader` or `yaml.CSafeLoader`.
+  cwe:
+  - 'CWE-502: Deserialization of Untrusted Data'

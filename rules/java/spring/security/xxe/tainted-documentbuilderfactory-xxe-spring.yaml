@@ -1,0 +1,20 @@
+rules:
+- id: tainted-documentbuilderfactory-xxe-spring
+  message: 'The application is using an XML parser that has not been safely configured.
+    This might lead to XML External Entity (XXE) vulnerabilities when parsing user-controlled
+    input. An attacker can include document type definitions (DTDs) or XIncludes which
+    can interact with internal or external hosts. XXE can lead to other vulnerabilities,
+    such as Local File Inclusion (LFI), Remote Code Execution (RCE), and Server-side
+    request forgery (SSRF), depending on the application configuration. An attacker
+    can also use DTDs to expand recursively, leading to a Denial-of-Service (DoS)
+    attack, also known as a `Billion Laughs Attack`. It is our recommendation to secure
+    this parser against XXE attacks by configuring the DocumentBuilder parser with
+    `factory.setFeature(http://apache.org/xml/features/disallow-doctype-decl, true)`.
+    Alternatively, the following configurations also provide protection against XXE
+    attacks. `factory.setExpandEntityReferences(false)`, `factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING,
+    true)`, `factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "")`, or enabling
+    both `factory.setFeature("http://xml.org/sax/features/external-general-entities",
+    false)` and `factory.setFeature("http://xml.org/sax/features/external-general-entities",
+    false);`. For more information, see: [Java XXE prevention](https://semgrep.dev/docs/cheat-sheets/java-xxe/)'
+  cwe:
+  - 'CWE-611: Improper Restriction of XML External Entity Reference'

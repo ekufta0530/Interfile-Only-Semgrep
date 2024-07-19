@@ -1,0 +1,11 @@
+rules:
+- id: tainted-system-command
+  message: 'Untrusted input might be injected into a command executed by the application,
+    which can lead to a command injection vulnerability. An attacker can execute arbitrary
+    commands, potentially gaining complete control of the system. To prevent this
+    vulnerability, avoid executing OS commands with user input. If this is unavoidable,
+    validate and sanitize the input, and use safe methods for executing the commands.
+    For more information, see: [Java command injection prevention](https://semgrep.dev/docs/cheat-sheets/java-command-injection/)'
+  cwe:
+  - 'CWE-78: Improper Neutralization of Special Elements used in an OS Command (''OS
+    Command Injection'')'

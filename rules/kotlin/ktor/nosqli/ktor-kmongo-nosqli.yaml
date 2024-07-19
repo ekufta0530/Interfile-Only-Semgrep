@@ -1,0 +1,10 @@
+rules:
+- id: ktor-kmongo-nosqli
+  message: Untrusted input might be used to build a database query, which can lead
+    to a NoSQL injection vulnerability. An attacker can execute malicious NoSQL statements
+    and gain unauthorized access to sensitive data, modify, delete data, or execute
+    arbitrary system commands. Make sure all user input is validated and sanitized,
+    and avoid using tainted user input to construct NoSQL statements if possible.
+    Ideally, avoid raw queries and instead use parameterized queries.
+  cwe:
+  - 'CWE-943: Improper Neutralization of Special Elements in Data Query Logic'

@@ -1,0 +1,6 @@
+rules:
+- id: unvalidated-array-index
+  message: Externally controlled data is used to index a fixed-size array, `$BUFFER`.
+    This could lead to an out-of-bounds read or write, triggering memory corruption.
+  cwe:
+  - 'CWE-120: Buffer Copy without Checking Size of Input (''Classic Buffer Overflow'')'

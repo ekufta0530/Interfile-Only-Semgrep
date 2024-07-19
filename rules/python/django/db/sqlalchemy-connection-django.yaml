@@ -1,0 +1,12 @@
+rules:
+- id: sqlalchemy-connection-django
+  message: Untrusted input might be used to build a database query, which can lead
+    to a SQL injection vulnerability. An attacker can execute malicious SQL statements
+    and gain unauthorized access to sensitive data, modify, delete data, or execute
+    arbitrary system commands. To prevent this vulnerability, use prepared statements
+    that do not concatenate user-controllable strings and use parameterized queries
+    where SQL commands and user data are strictly separated. Also, consider using
+    an object-relational (ORM) framework to operate with safer abstractions.
+  cwe:
+  - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL
+    Injection'')'

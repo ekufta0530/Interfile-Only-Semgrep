@@ -1,0 +1,12 @@
+rules:
+- id: peewee-django
+  message: Untrusted input might be used to build a database query, which can lead
+    to a SQL injection vulnerability. An attacker can execute malicious SQL statements
+    and gain unauthorized access to sensitive data, modify, delete data, or execute
+    arbitrary system commands. Peewee provides a query builder which should allow
+    to create the SQL query in a safe way. If you cannot use it, make sure to check
+    the value exists in an allowlist, such that no user-controllable value can influence
+    the eventual SQL query.
+  cwe:
+  - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL
+    Injection'')'

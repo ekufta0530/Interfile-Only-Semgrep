@@ -1,0 +1,8 @@
+rules:
+- id: fastapi-cookie-httponly-false
+  message: Detected a cookie where the `HttpOnly` flag is either missing or disabled.
+    The `HttpOnly` cookie flag instructs the browser to forbid client-side JavaScript
+    to read the cookie. If JavaScript interaction is required, you can ignore this
+    finding. However, set the `HttpOnly` flag to `true` in all other cases.
+  cwe:
+  - 'CWE-1004: Sensitive Cookie Without ''HttpOnly'' Flag'

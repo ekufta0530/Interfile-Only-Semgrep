@@ -1,0 +1,6 @@
+rules:
+- id: local-variable-new-delete
+  message: This expression points to memory that has been freed. This can lead to
+    a segmentation fault or memory corruption.
+  cwe:
+  - 'CWE-416: Use After Free'

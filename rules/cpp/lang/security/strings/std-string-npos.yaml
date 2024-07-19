@@ -1,0 +1,8 @@
+rules:
+- id: std-string-npos
+  message: The return value of `$VAR.$NPOS_CALL(...)` has been modified so it can
+    never equal `std::string::npos`. This could lead to an `std::out_of_range` exception
+    being thrown or trigger an out-of-bounds read if the position is used as an array
+    index.
+  cwe:
+  - 'CWE-125: Out-of-bounds Read'

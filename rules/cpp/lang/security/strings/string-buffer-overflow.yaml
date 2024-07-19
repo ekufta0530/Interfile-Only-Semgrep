@@ -1,0 +1,6 @@
+rules:
+- id: string-buffer-overflow
+  message: '`$STR_FUNCTION` does not validate the length of the source string which
+    can trigger a buffer overflow'
+  cwe:
+  - 'CWE-120: Buffer Copy without Checking Size of Input (''Classic Buffer Overflow'')'

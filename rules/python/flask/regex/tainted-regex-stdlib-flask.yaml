@@ -1,0 +1,9 @@
+rules:
+- id: tainted-regex-stdlib-flask
+  message: The regular expression identified appears vulnerable to Regular Expression
+    Denial of Service (ReDoS) through catastrophic backtracking. If the input is attacker
+    controllable, this vulnerability can lead to systems being non-responsive or may
+    crash due to ReDoS. Where possible, re-write the regex so as not to leverage backtracking
+    or use a library that offers default protection against ReDoS.
+  cwe:
+  - 'CWE-1333: Inefficient Regular Expression Complexity'

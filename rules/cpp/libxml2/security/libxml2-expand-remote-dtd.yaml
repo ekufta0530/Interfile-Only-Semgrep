@@ -1,0 +1,13 @@
+rules:
+- id: libxml2-expand-remote-dtd
+  message: The application is using an XML parser that has not been safely configured.
+    This might lead to XML External Entity (XXE) vulnerabilities when parsing user-controlled
+    input. An attacker can include document type definitions (DTDs) or XIncludes which
+    can interact with internal or external hosts. XXE can lead to other vulnerabilities,
+    such as Local File Inclusion (LFI), Remote Code Execution (RCE), and Server-side
+    request forgery (SSRF), depending on the application configuration. An attacker
+    can also use DTDs to expand recursively, leading to a Denial-of-Service (DoS)
+    attack, also known as a `Billion Laughs Attack`. If DTD is required for local
+    files then pass the `XML_PARSE_NONET` option which will disable network access.
+  cwe:
+  - 'CWE-611: Improper Restriction of XML External Entity Reference'

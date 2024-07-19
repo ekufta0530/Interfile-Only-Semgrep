@@ -1,0 +1,12 @@
+rules:
+- id: generic-sql-flask
+  message: Untrusted input might be used to build a database query, which can lead
+    to a SQL injection vulnerability. An attacker can execute malicious SQL statements
+    and gain unauthorized access to sensitive data, modify, delete data, or execute
+    arbitrary system commands. The driver API has the ability to bind parameters to
+    the query in a safe way. Make sure not to dynamically create SQL queries from
+    user-influenced inputs. If you cannot avoid this, either escape the data properly
+    or create an allowlist to check the value.
+  cwe:
+  - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL
+    Injection'')'

@@ -1,0 +1,8 @@
+rules:
+- id: format-string-injection
+  message: Externally controlled data influences a format string. This can allow an
+    attacker to leak information from memory or trigger memory corruption. Format
+    strings should be constant strings to prevent these issues. If you need to print
+    a user-controlled string then you can use `%s`.
+  cwe:
+  - 'CWE-134: Use of Externally-Controlled Format String'

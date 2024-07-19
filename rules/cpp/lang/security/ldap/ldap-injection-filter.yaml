@@ -1,0 +1,8 @@
+rules:
+- id: ldap-injection-filter
+  message: Untrusted input might be used to build an LDAP query, which can allow attackers
+    to run arbitrary LDAP queries. If an LDAP query must contain untrusted input then
+    it must be escaped.
+  cwe:
+  - 'CWE-90: Improper Neutralization of Special Elements used in an LDAP Query (''LDAP
+    Injection'')'

@@ -1,0 +1,7 @@
+rules:
+- id: negative-return-value-array-index
+  message: The preceding call to `$SOURCE` can return a negative value when an error
+    is encountered. This can lead to an out-of-bounds array access and possible memory
+    corruption.
+  cwe:
+  - 'CWE-787: Out-of-bounds Write'

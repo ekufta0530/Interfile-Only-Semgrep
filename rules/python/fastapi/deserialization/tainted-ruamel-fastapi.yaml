@@ -1,0 +1,12 @@
+rules:
+- id: tainted-ruamel-fastapi
+  message: The application may convert user-controlled data into an object, which
+    can lead to an insecure deserialization vulnerability. An attacker can create
+    a malicious serialized object, pass it to the application, and take advantage
+    of the deserialization process to perform Denial-of-service (DoS), Remote code
+    execution (RCE), or bypass access control measures. Starting from `ruamel.yaml`
+    version 0.15.0 the default loader (`typ='rt'`) is a direct derivative of the safe
+    loader. Before this version, use the optional argument `Loader` with value `SafeLoader`
+    or `CSafeLoader`, or use the `safe_load` function.
+  cwe:
+  - 'CWE-502: Deserialization of Untrusted Data'

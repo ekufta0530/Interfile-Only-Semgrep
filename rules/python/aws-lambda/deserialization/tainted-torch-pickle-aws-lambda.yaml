@@ -1,0 +1,11 @@
+rules:
+- id: tainted-torch-pickle-aws-lambda
+  message: The application may convert user-controlled data into an object, which
+    can lead to an insecure deserialization vulnerability. An attacker can create
+    a malicious serialized object, pass it to the application, and take advantage
+    of the deserialization process to perform Denial-of-service (DoS), Remote code
+    execution (RCE), or bypass access control measures. A number of functions and
+    packages in the `torch` module rely on the `pickle` module and should not be used
+    to unpackage data from untrusted sources.
+  cwe:
+  - 'CWE-502: Deserialization of Untrusted Data'

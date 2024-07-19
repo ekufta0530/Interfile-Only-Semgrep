@@ -1,0 +1,10 @@
+rules:
+- id: djangoorm-django
+  message: "Untrusted input might be used to build a database query, which can lead\
+    \ to a SQL injection vulnerability. An attacker can execute malicious SQL statements\
+    \ and gain unauthorized access to sensitive data, modify, delete data, or execute\
+    \ arbitrary system commands. Don\u2019t manually concatenate values to a query,\
+    \ use query parameterization instead to avoid SQL injection."
+  cwe:
+  - 'CWE-89: Improper Neutralization of Special Elements used in an SQL Command (''SQL
+    Injection'')'

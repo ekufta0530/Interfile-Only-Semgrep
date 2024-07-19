@@ -1,0 +1,7 @@
+rules:
+- id: libxml2-expand-local-entities
+  message: The libxml2 parser is configured to process entities. Without other options
+    such as processing DTDs or accessing remote entities from the network, it should
+    not pose a risk except for memory exhaustion.
+  cwe:
+  - 'CWE-611: Improper Restriction of XML External Entity Reference'

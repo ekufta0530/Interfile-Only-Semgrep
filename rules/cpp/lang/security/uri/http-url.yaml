@@ -1,0 +1,7 @@
+rules:
+- id: http-url
+  message: The application may be making an insecure HTTP request which may allow
+    attackers to intercept plaintext information. Instead, the URL should use HTTPS
+    to ensure that the request is encrypted.
+  cwe:
+  - 'CWE-319: Cleartext Transmission of Sensitive Information'

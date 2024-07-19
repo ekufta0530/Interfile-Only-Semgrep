@@ -1,0 +1,18 @@
+rules:
+- id: libxml2-expand-xinclude
+  message: The application is using an XML parser that has not been safely configured.
+    This might lead to XML External Entity (XXE) vulnerabilities when parsing user-controlled
+    input. An attacker can include document type definitions (DTDs) or XIncludes which
+    can interact with internal or external hosts. XXE can lead to other vulnerabilities,
+    such as Local File Inclusion (LFI), Remote Code Execution (RCE), and Server-side
+    request forgery (SSRF), depending on the application configuration. An attacker
+    can also use DTDs to expand recursively, leading to a Denial-of-Service (DoS)
+    attack, also known as a `Billion Laughs Attack`. The best defense against XXE
+    is to have an XML parser that supports disabling DTDs. Limiting the use of external
+    entities from the start can prevent the parser from being used to process untrusted
+    XML files. Reducing dependencies on external resources is also a good practice
+    for performance reasons. It is difficult to guarantee that even a trusted XML
+    file on your server or during transmission has not been tampered with by a malicious
+    third-party.
+  cwe:
+  - 'CWE-611: Improper Restriction of XML External Entity Reference'

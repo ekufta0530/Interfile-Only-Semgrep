@@ -1,0 +1,9 @@
+rules:
+- id: xpath-taint-grpc
+  message: XPath queries are constructed dynamically on user-controlled input. This
+    could lead to XPath injection if variables passed into the evaluate or compile
+    commands are not properly sanitized. Xpath injection could lead to unauthorized
+    access to sensitive information in XML documents. Thoroughly sanitize user input
+    or use parameterized XPath queries if you can.
+  cwe:
+  - 'CWE-643: Improper Neutralization of Data within XPath Expressions (''XPath Injection'')'

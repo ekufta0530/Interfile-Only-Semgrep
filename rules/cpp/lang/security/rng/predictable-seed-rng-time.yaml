@@ -1,0 +1,7 @@
+rules:
+- id: predictable-seed-rng-time
+  message: The seed value of a Pseudo Random Number Generator (PRNG) is directly derived
+    from the time, which is highly predictable. Do not use values from this PRNG to
+    derive a secrets, such as passwords or cryptographic keys.
+  cwe:
+  - 'CWE-337: Predictable Seed in Pseudo-Random Number Generator (PRNG)'

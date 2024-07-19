@@ -1,0 +1,6 @@
+rules:
+- id: dynamic-library-path
+  message: Externally controlled data influences the filename of a dynamically loaded
+    library. This could trigger arbitrary code execution.
+  cwe:
+  - 'CWE-114: Process Control'

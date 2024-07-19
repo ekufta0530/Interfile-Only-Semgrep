@@ -1,0 +1,11 @@
+rules:
+- id: log-request-headers
+  message: The application stores potentially sensitive information in log files.
+    This could lead to a vulnerability, if an attacker can gain access to logs and
+    then use the sensitive information to perform further attacks. When dealing with
+    HTTP requests, sensitive data could be, for instance, JWT tokens or other session
+    identifiers. To prevent this vulnerability review the type of information being
+    logged. Sensitive information can be identified and filtered or obfuscated before
+    calling logging functions.
+  cwe:
+  - 'CWE-532: Insertion of Sensitive Information into Log File'

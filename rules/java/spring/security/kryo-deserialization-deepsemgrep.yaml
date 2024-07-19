@@ -1,0 +1,15 @@
+rules:
+- id: kryo-deserialization-deepsemgrep
+  message: 'The application may convert user-controlled data into an object, which
+    can lead to an insecure deserialization vulnerability. An attacker can create
+    a malicious serialized object, pass it to the application, and take advantage
+    of the deserialization process to perform Denial-of-service (DoS), Remote code
+    execution (RCE), or bypass access control measures. To prevent this vulnerability,
+    leverage data formats such as JSON or XML as safer alternatives. If you need to
+    deserialize user input in a specific format, consider digitally signing the data
+    before serialization to prevent tampering. For more information, see: [Deserialization
+    prevention](https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html)
+    We do not recommend deserializing untrusted data with the `Kryo` unless you explicitly
+    define permissions for types that are allowed to be deserialized by `Kryo`.'
+  cwe:
+  - 'CWE-502: Deserialization of Untrusted Data'

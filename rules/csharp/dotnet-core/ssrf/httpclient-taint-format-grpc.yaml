@@ -1,0 +1,14 @@
+rules:
+- id: httpclient-taint-format-grpc
+  message: Untrusted input might be used to build an HTTP request, which can lead
+    to a Server-side request forgery (SSRF) vulnerability. SSRF allows an attacker
+    to send crafted requests from the server side to other internal or external systems.
+    SSRF can lead to unauthorized access to sensitive data and, in some cases, allow
+    the attacker to control applications or systems that trust the vulnerable service.
+    To prevent this vulnerability, avoid allowing user input to craft the base request.
+    Instead, treat it as part of the path or query parameter and encode it appropriately.
+    When user input is necessary to prepare the HTTP request, perform strict input
+    validation. Additionally, whenever possible, use allowlists to only interact with
+    expected, trusted domains.
+  cwe:
+  - 'CWE-918: Server-Side Request Forgery (SSRF)'

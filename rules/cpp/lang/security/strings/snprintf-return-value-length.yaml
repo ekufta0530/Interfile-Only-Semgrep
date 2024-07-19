@@ -1,0 +1,7 @@
+rules:
+- id: snprintf-return-value-length
+  message: The return value of `snprintf` is the number of characters that would be
+    written, excluding the NUL terminator. The return value must be validated before
+    using it as a buffer index or buffer length.
+  cwe:
+  - 'CWE-787: Out-of-bounds Write'

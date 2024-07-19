@@ -1,0 +1,8 @@
+rules:
+- id: sqlalchemy-django-relationship
+  message: The application might dynamically evaluate untrusted input, which can lead
+    to a code injection vulnerability. An attacker can execute arbitrary code, potentially
+    gaining complete control of the system. Don't pass untrusted data to this relationship
+    argument, it's getting passed to `eval`.
+  cwe:
+  - 'CWE-94: Improper Control of Generation of Code (''Code Injection'')'

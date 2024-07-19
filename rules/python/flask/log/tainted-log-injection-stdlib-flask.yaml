@@ -1,0 +1,9 @@
+rules:
+- id: tainted-log-injection-stdlib-flask
+  message: Detected a logger that logs user input without properly neutralizing the
+    output. The log message could contain characters like ` ` and ` ` and cause an
+    attacker to forge log entries or include malicious content into the logs. Use
+    proper input validation and/or output encoding to prevent log entries from being
+    forged.
+  cwe:
+  - 'CWE-117: Improper Output Neutralization for Logs'

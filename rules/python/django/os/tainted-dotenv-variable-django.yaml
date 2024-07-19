@@ -1,0 +1,7 @@
+rules:
+- id: tainted-dotenv-variable-django
+  message: The application is using variables or data stores that are defined or modified
+    by untrusted input. To prevent this vulnerability perform strict input validation
+    of the data against an allowlist of approved options.
+  cwe:
+  - 'CWE-454: External Initialization of Trusted Variables or Data Stores'

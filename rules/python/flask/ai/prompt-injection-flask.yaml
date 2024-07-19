@@ -1,0 +1,8 @@
+rules:
+- id: prompt-injection-flask
+  message: A prompt is created and user-controlled data reaches that prompt. This
+    can lead to prompt injection. Make sure the user inputs are properly segmented
+    from the system's in your prompts.
+  cwe:
+  - 'CWE-75: Failure to Sanitize Special Elements into a Different Plane (Special
+    Element Injection)'

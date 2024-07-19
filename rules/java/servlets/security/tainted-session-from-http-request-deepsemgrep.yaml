@@ -1,0 +1,8 @@
+rules:
+- id: tainted-session-from-http-request-deepsemgrep
+  message: Mixing trusted and untrusted data within the same structure can lead to
+    trust boundary violations, where unvalidated data is mistakenly trusted, potentially
+    bypassing security mechanisms. Thoroughly sanitize user input before passing it
+    into such function calls.
+  cwe:
+  - 'CWE-501: Trust Boundary Violation'

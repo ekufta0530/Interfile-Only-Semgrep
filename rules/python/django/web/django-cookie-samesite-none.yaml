@@ -1,0 +1,15 @@
+rules:
+- id: django-cookie-samesite-none
+  message: 'Detected a cookie options with the `SameSite` flag set to "None". This
+    is a potential security risk that arises from the way web browsers manage cookies.
+    In a typical web application, cookies are used to store and transmit session-related
+    data between a client and a server. To enhance security, cookies can be marked
+    with the "SameSite" attribute, which restricts their usage based on the origin
+    of the page that set them. This attribute can have three values: "Strict," "Lax,"
+    or "None". Make sure the `SameSite` attribute of the important cookies (e.g.,
+    session cookie) is set to a reasonable value. When `SameSite` is set to "Strict",
+    no 3rd party cookie will be sent with outgoing requests, this is the most secure
+    and private setting but harder to deploy with good usability. Setting it to "Lax"
+    is the minimum requirement.'
+  cwe:
+  - 'CWE-1275: Sensitive Cookie with Improper SameSite Attribute'

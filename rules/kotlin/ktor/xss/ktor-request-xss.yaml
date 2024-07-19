@@ -1,0 +1,10 @@
+rules:
+- id: ktor-request-xss
+  message: Untrusted input could be used to tamper with a web page rendering, which
+    can lead to a Cross-site scripting (XSS) vulnerability. XSS vulnerabilities occur
+    when untrusted input executes malicious JavaScript code, leading to issues such
+    as account compromise and sensitive information leakage. To prevent this vulnerability,
+    validate the user input, perform contextual output encoding or sanitize the input.
+  cwe:
+  - 'CWE-79: Improper Neutralization of Input During Web Page Generation (''Cross-site
+    Scripting'')'

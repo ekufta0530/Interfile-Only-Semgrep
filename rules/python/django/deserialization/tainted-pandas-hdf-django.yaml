@@ -1,0 +1,11 @@
+rules:
+- id: tainted-pandas-hdf-django
+  message: The application may convert user-controlled data into an object, which
+    can lead to an insecure deserialization vulnerability. An attacker can create
+    a malicious serialized object, pass it to the application, and take advantage
+    of the deserialization process to perform Denial-of-service (DoS), Remote code
+    execution (RCE), or bypass access control measures. The `pandas.read_hdf()` function
+    uses `pickle` when the `fixed` format is used during serializing. This function
+    should not be used with untrusted data.
+  cwe:
+  - 'CWE-502: Deserialization of Untrusted Data'

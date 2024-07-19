@@ -1,0 +1,6 @@
+rules:
+- id: double-delete
+  message: '`$SINK_VAR` has previously been deleted which will trigger a double-free
+    vulnerability. This may lead to memory corruption.'
+  cwe:
+  - 'CWE-415: Double Free'

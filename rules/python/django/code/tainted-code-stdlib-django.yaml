@@ -1,0 +1,9 @@
+rules:
+- id: tainted-code-stdlib-django
+  message: The application might dynamically evaluate untrusted input, which can lead
+    to a code injection vulnerability. An attacker can execute arbitrary code, potentially
+    gaining complete control of the system. To prevent this vulnerability, avoid executing
+    code containing user input. If this is unavoidable, validate and sanitize the
+    input, and use safe alternatives for evaluating user input.
+  cwe:
+  - 'CWE-94: Improper Control of Generation of Code (''Code Injection'')'
